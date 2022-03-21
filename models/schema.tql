@@ -1,0 +1,128 @@
+define
+
+confidence sub attribute, value double;
+
+pubmed-article sub entity,
+  owns pmid,
+  owns title,
+  owns annotated-abstract,
+  plays knowledge-extraction:mined-text,
+  plays entity-extraction:mined-text,
+  plays relation-extraction:mined-text;
+
+pmid sub attribute, value string;
+title sub attribute, value string;
+annotated-abstract sub attribute, value string,
+  plays abstract-containing-sentence:abstract-container,
+  plays coref-chain:owner;
+
+sentence sub entity,
+  owns sentiment,
+  owns text,
+  plays abstract-containing-sentence:contained-sentence,
+  plays sentence-containing-token:sentence-container,
+  plays mention:mentioning-sentence,
+  plays entity-extraction:mined-text,
+  plays mined-relation:mentioning-sentence;
+
+sentiment sub attribute, value string;
+text sub attribute, value string;
+
+token sub entity,
+  owns start-position,
+  owns end-position,
+  owns tag,
+  owns ner,
+  owns lemma,
+  plays sentence-containing-token:contained-token,
+  plays entity-containing-token:contained-token,
+  plays mined-relation:object,
+  plays mined-relation:subject;
+
+start-position sub attribute, value double;
+end-position sub attribute, value double;
+tag sub attribute, value string;
+ner sub attribute, value string,
+    owns confidence;
+lemma sub attribute, value string;
+
+mined-relation sub relation,
+    owns relation-type,
+    owns confidence,
+    relates object,
+    relates subject,
+    relates mentioning-sentence,
+    plays relation-extraction:extracted-relation;
+
+relation-type sub attribute, value string;
+
+entity-mention sub entity,
+    owns value,
+    owns entity-type,
+    plays mention:mentioned-entity,
+    plays entity-extraction:extracted-entity,
+    plays entity-containing-token:containing-entity;
+
+entity-type sub attribute, value string;
+value sub attribute, value string;
+
+mention sub relation,
+    relates mentioned-entity,
+    relates mentioning-sentence,
+    plays coref-chain:owned,
+    plays coref-chain:representative;
+
+coref-chain sub relation,
+    owns chain-id,
+    relates owner,
+    relates owned,
+    relates representative;
+
+chain-id sub attribute, value double;
+
+abstract-containing-sentence sub relation,
+    relates abstract-container,
+    relates contained-sentence;
+
+sentence-containing-token sub relation,
+    relates sentence-container,
+    relates contained-token;
+
+entity-containing-token sub relation,
+    relates containing-entity,
+    relates contained-token;
+
+knowledge-extraction sub relation,
+   relates extracted-knowledge,
+   relates mined-text;
+
+entity-extraction sub knowledge-extraction,
+    relates extracted-entity as extracted-knowledge;
+
+
+relation-extraction sub knowledge-extraction,
+    relates extracted-relation as extracted-knowledge;
+
+
+rule entity-extraction-rule:
+when {
+   $p isa pubmed-article, has annotated-abstract $a;
+   $e isa entity-mention;
+   (abstract-container:$a, contained-sentence:$s) isa abstract-containing-sentence;
+   (mentioning-sentence:$s, $e) isa mention;
+}
+then {
+  (extracted-entity: $e, mined-text: $p) isa entity-extraction;
+};
+
+rule relation-extraction-rule:
+when {
+   $p isa pubmed-article, has annotated-abstract $a;
+   (abstract-container:$a, contained-sentence:$s) isa abstract-containing-sentence;
+   $mr ($s, $o, $su) isa mined-relation;
+}
+then {
+  (extracted-relation: $mr, mined-text: $p) isa relation-extraction;
+};       
+
+    
