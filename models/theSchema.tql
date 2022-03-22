@@ -1,6 +1,0 @@
-define
-person sub entity,
-owns age;
-
-age sub attribute,
-value string;
